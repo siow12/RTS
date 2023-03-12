@@ -20,7 +20,8 @@ import java.util.concurrent.atomic.AtomicReference;
 public class Actuator {
     public static void main(String[] args) {
         ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        executorService.execute(new EngineActuator(new AtomicReference<>(new AirplaneData())));
+        AtomicReference<AirplaneData> airplaneData = new AtomicReference<>(new AirplaneData());
+        executorService.execute(new EngineActuator(airplaneData));
         executorService.shutdown();
     }
 }
