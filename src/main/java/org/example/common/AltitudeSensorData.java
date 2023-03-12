@@ -12,5 +12,9 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @SuperBuilder
 public class AltitudeSensorData extends SensorData{
-    private double meter;
+    private Double meter;
+
+    private Boolean increase;
+
+    private Boolean decrease;
 }

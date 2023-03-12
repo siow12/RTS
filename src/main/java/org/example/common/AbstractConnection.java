@@ -10,7 +10,9 @@ public abstract class AbstractConnection {
 
     private static ConnectionFactory factory;
     private static Connection connection;
-    AbstractConnection(){}
+
+    AbstractConnection() {
+    }
 
     public static synchronized Connection getConnection() throws Exception {
         if (connection == null || !connection.isOpen()) {

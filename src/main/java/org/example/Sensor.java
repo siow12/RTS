@@ -1,15 +1,9 @@
 package org.example;
 
-import com.rabbitmq.client.BuiltinExchangeType;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.QueueEnum;
-import org.example.common.SensorConnection;
 import org.example.sensor.AltitudeSensor;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -19,7 +13,7 @@ public class Sensor {
         ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         //Altitude
-        executorService.submit(new AltitudeSensor(QueueEnum.Altitude.getName()));
+        executorService.execute(new AltitudeSensor(QueueEnum.Altitude.getName()));
 
 
         executorService.shutdown();

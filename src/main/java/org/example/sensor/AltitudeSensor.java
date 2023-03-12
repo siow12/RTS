@@ -1,22 +1,17 @@
 package org.example.sensor;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.example.common.AltitudeSensorData;
-import org.example.common.QueueEnum;
-import org.example.common.SensorConnection;
-import org.example.common.SensorData;
+import org.example.common.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Instant;
 import java.util.Random;
 import java.util.UUID;
 
@@ -25,10 +20,9 @@ import java.util.UUID;
 @NoArgsConstructor
 public class AltitudeSensor implements Runnable {
 
-    private String queueName;
-
-    private static final double cruisingHeight = 31000.0;
+    private static final double cruisingHeightMin = 31000.0;
     private static final double cruisingHeightMax = 38000.0;
+    private String queueName;
 
     @Override
     public void run() {
@@ -38,17 +32,63 @@ public class AltitudeSensor implements Runnable {
             ch.exchangeDeclare(QueueEnum.Altitude.getName(), BuiltinExchangeType.DIRECT);
             double altitude = 0.0;
 
-            //TODO Take Off
-            while(Double.compare(altitude,cruisingHeight) < 0){
-                double climbHeight = new Random().nextDouble() * 2000;
+            //Take Off
+            while (Double.compare(altitude, cruisingHeightMin) < 0) {
+                double climbHeight = new Random().nextDouble() * 1200;
                 altitude += climbHeight;
-                publish(queueName, AltitudeSensorData.builder().name(queueName).id(UUID.randomUUID().toString()).meter(altitude).build(),ch);
+                publish(queueName, AltitudeSensorData.builder()
+                        .name(queueName)
+                        .id(UUID.randomUUID().toString())
+                        .meter(altitude)
+                        .increase(true)
+                        .decrease(false)
+                        .timestamp(Instant.now())
+                        .build(), ch);
+
+                Thread.sleep(200);
+            }
+
+            //Cruising when react cruising height
+            for(int i=0; i<10; i++){
+                altitude = new Random().nextDouble(30000, 40000);
+                publish(queueName, AltitudeSensorData.builder()
+                        .name(queueName)
+                        .id(UUID.randomUUID().toString())
+                        .meter(altitude)
+                        .increase(false)
+                        .decrease(false)
+                        .timestamp(Instant.now())
+                        .build(), ch);
                 Thread.sleep(500);
             }
 
-            //Todo Cruising
+            //Post Landing
+            while(altitude > Constants.LandingHeight){
+                altitude -= new Random().nextDouble(500, 1000);
+                publish(queueName, AltitudeSensorData.builder()
+                        .name(queueName)
+                        .id(UUID.randomUUID().toString())
+                        .meter(altitude)
+                        .increase(false)// Set increase false as it is landing
+                        .decrease(true)
+                        .timestamp(Instant.now())
+                        .build(), ch);
+                Thread.sleep(300);
+            }
 
-            //TODO Landing
+            //Landing
+            while(altitude > 0){
+                altitude -= new Random().nextDouble(50, 200);
+                publish(queueName, AltitudeSensorData.builder()
+                        .name(queueName)
+                        .id(UUID.randomUUID().toString())
+                        .meter(altitude)
+                        .increase(false)// Set increase false as it is landing
+                        .decrease(true)
+                        .timestamp(Instant.now())
+                        .build(), ch);
+                Thread.sleep(300);
+            }
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -57,9 +97,9 @@ public class AltitudeSensor implements Runnable {
         }
     }
 
-    public void publish(String queueName, SensorData data, Channel channel) throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
+    public void publish(String queueName, AltitudeSensorData data, Channel channel) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         channel.basicPublish(queueName, "", null, objectMapper.writeValueAsString(data).getBytes());
-        log.info("Data {} Sent", data);
+        log.info("{} Data {} Sent", getClass().getSimpleName(), data);
     }
 }
