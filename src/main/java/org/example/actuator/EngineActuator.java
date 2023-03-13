@@ -40,7 +40,7 @@ public class EngineActuator extends AbstractActuator implements Runnable {
                 //Convert byte to string
                 String m = new String(msg.getBody(), StandardCharsets.UTF_8);
 
-                //COnvert string (JSON format) to Object
+                //Convert string (JSON format) to Object
                 ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
                 AltitudeSensorData data = objectMapper.readValue(m, AltitudeSensorData.class);
                 log.info("Message Received: {}", data);

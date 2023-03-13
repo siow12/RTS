@@ -5,6 +5,8 @@ import lombok.Data;
 @Data
 public class AirplaneData {
     private double enginePowerInPercentage;
-    private double wingFlagAngle;
+
+    private boolean oxygenMaskOpen;
+
     //TODO add more field
 }
