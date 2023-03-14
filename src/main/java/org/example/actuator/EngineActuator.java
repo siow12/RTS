@@ -13,16 +13,12 @@ import org.example.common.Constants;
 import org.example.common.QueueEnum;
 
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicReference;
 
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
-@NoArgsConstructor
 @SuperBuilder
 @Slf4j
 public class EngineActuator extends AbstractActuator implements Runnable {
-
-    private AtomicReference<AirplaneData> airplaneData;
 
     @Override
     public void run() {
@@ -47,7 +43,7 @@ public class EngineActuator extends AbstractActuator implements Runnable {
                 //Engine Logic
 
 
-                if (data.getMeter() < Constants.cruisingHeightMin && data.getIncrease() && !data.getDecrease()) {//Take off
+                if (data.getFeet() < Constants.cruisingHeightMin && data.getIncrease() && !data.getDecrease()) {//Take off
 
                     airplaneData.updateAndGet(a -> {
                         a.setEnginePowerInPercentage(0.5);
@@ -64,14 +60,14 @@ public class EngineActuator extends AbstractActuator implements Runnable {
                     });
                     log.info("Cruising, Airplane engine power set to {}%", 1.0 * 100);
                 }
-                if ((data.getMeter() > Constants.LandingHeight) && !data.getIncrease() && data.getDecrease()) {//Post Landing
+                if ((data.getFeet() > Constants.LandingHeight) && !data.getIncrease() && data.getDecrease()) {//Post Landing
                     airplaneData.updateAndGet(a -> {
                         a.setEnginePowerInPercentage(0.1);
                         return a;
                     });
                     log.info("Post Landing, Airplane engine power set to {}%", 0.1 * 100);
                 }
-                if (data.getMeter() < Constants.LandingHeight && !data.getIncrease()) {//Landing
+                if (data.getFeet() < Constants.LandingHeight && !data.getIncrease()) {//Landing
                     airplaneData.updateAndGet(a -> {
                         a.setEnginePowerInPercentage(0.1);
                         return a;

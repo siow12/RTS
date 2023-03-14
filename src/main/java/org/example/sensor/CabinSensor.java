@@ -7,6 +7,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.common.AltitudeSensorData;
 import org.example.common.CabinSensorData;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 @Slf4j
 @AllArgsConstructor
@@ -24,7 +26,10 @@ import java.util.UUID;
 public class CabinSensor implements Runnable {
     public static final double pressureMin = 1;
     public static final double pressureMax = 1013;
+
     private String queueName;
+
+    private CountDownLatch countDownLatch;
 
     @Override
     public void run() {

@@ -4,97 +4,96 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.common.*;
+import org.example.common.AltitudeSensorData;
+import org.example.common.Constants;
+import org.example.common.QueueEnum;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 @Slf4j
 @AllArgsConstructor
 @NoArgsConstructor
 public class AltitudeSensor implements Runnable {
-
-    private static final double cruisingHeightMin = 31000.0;
-    private static final double cruisingHeightMax = 38000.0;
     private String queueName;
+
+    private CountDownLatch countDownLatch;
+
+    private Channel channel;
+
 
     @Override
     public void run() {
         //Altitude Simulation
-        try (Connection con = SensorConnection.getConnection()) {
-            Channel ch = con.createChannel();
-            ch.exchangeDeclare(QueueEnum.Altitude.getName(), BuiltinExchangeType.DIRECT);
-            double altitude = 0.0;
+        try {
+            channel.exchangeDeclare(QueueEnum.Altitude.getName(), BuiltinExchangeType.DIRECT);
+            long count = countDownLatch.getCount();
 
-            //Take Off
-            while (Double.compare(altitude, cruisingHeightMin) < 0) {
-                double climbHeight = new Random().nextDouble() * 1200;
-                altitude += climbHeight;
+            if (countDownLatch.getCount() > Constants.takeOffState) {//Take off
+                long elapsedTime = Constants.totalTime - count;
+                long increment = Constants.takeOff - 1;
+                double avgIncrementPerCount = Constants.cruisingHeightMin / (double) increment;
+                double altitude = avgIncrementPerCount * elapsedTime;
                 publish(queueName, AltitudeSensorData.builder()
                         .name(queueName)
                         .id(UUID.randomUUID().toString())
-                        .meter(altitude)
+                        .feet(altitude)
                         .increase(true)
                         .decrease(false)
                         .timestamp(Instant.now())
-                        .build(), ch);
+                        .build(), channel);
 
-                Thread.sleep(200);
-            }
-
-            //Cruising when react cruising height
-            for(int i=0; i<10; i++){
-                altitude = new Random().nextDouble(30000, 40000);
+            } else if (countDownLatch.getCount() > Constants.cruisingState) {
+                double altitude = new Random().nextDouble(30000, 40000);
                 publish(queueName, AltitudeSensorData.builder()
                         .name(queueName)
                         .id(UUID.randomUUID().toString())
-                        .meter(altitude)
+                        .feet(altitude)
                         .increase(false)
                         .decrease(false)
                         .timestamp(Instant.now())
-                        .build(), ch);
-                Thread.sleep(500);
-            }
+                        .build(), channel);
 
-            //Post Landing
-            while(altitude > Constants.LandingHeight){
-                altitude -= new Random().nextDouble(500, 1000);
+            } else if (countDownLatch.getCount() > Constants.postLandingState) {
+                double avgDecrement = (Constants.cruisingHeightMin - Constants.LandingHeight) / Constants.postLanding;
+                long elapseTime = countDownLatch.getCount() - Constants.postLanding;
+                double altitude = (avgDecrement * (double) elapseTime) + Constants.LandingHeight;
+//                System.out.println(count + ": " + (Constants.totalTime - count));
+//                System.out.println(altitude);
+
                 publish(queueName, AltitudeSensorData.builder()
                         .name(queueName)
                         .id(UUID.randomUUID().toString())
-                        .meter(altitude)
-                        .increase(false)// Set increase false as it is landing
+                        .feet(altitude)
+                        .increase(false)
                         .decrease(true)
                         .timestamp(Instant.now())
-                        .build(), ch);
-                Thread.sleep(300);
-            }
+                        .build(), channel);
 
-            //Landing
-            while(altitude > 0){
-                altitude -= new Random().nextDouble(50, 200);
+            } else if (countDownLatch.getCount() > Constants.landingState) {
+                double avgDecrement = (Constants.LandingHeight) / Constants.landing;
+                long elapseTime = countDownLatch.getCount();
+                double altitude = (avgDecrement * (double) elapseTime);
+
                 publish(queueName, AltitudeSensorData.builder()
                         .name(queueName)
                         .id(UUID.randomUUID().toString())
-                        .meter(altitude)
-                        .increase(false)// Set increase false as it is landing
+                        .feet(altitude)
+                        .increase(false)
                         .decrease(true)
                         .timestamp(Instant.now())
-                        .build(), ch);
-                Thread.sleep(300);
-            }
+                        .build(), channel);
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error(e.getMessage());
         }
+
     }
 
     public void publish(String queueName, AltitudeSensorData data, Channel channel) throws Exception {

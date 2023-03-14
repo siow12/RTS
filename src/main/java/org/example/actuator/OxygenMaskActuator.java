@@ -16,11 +16,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
-@NoArgsConstructor
 @SuperBuilder
 @Slf4j
 public class OxygenMaskActuator extends AbstractActuator implements Runnable{
-    private AtomicReference<AirplaneData> airplaneData;
+
+
     @Override
     public void run() {
         try {
