@@ -7,7 +7,7 @@ import com.rabbitmq.client.Channel;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.common.CabinSensorData;
+import org.example.common.DirectionSensorData;
 import org.example.common.QueueEnum;
 
 import java.io.IOException;
@@ -19,29 +19,29 @@ import java.util.concurrent.CountDownLatch;
 @Slf4j
 @AllArgsConstructor
 @NoArgsConstructor
-public class CabinSensor implements Runnable {
+public class DirectionSensor implements Runnable {
 
     private String queueName;
 
     private CountDownLatch countDownLatch;
-    
+
     private Channel channel;
 
     @Override
     public void run() {
-        //Cabin Simulation
+        //Direction Simulation
         try {
-            channel.exchangeDeclare(QueueEnum.Cabin.getName(), BuiltinExchangeType.DIRECT);
+            channel.exchangeDeclare(QueueEnum.Direction.getName(), BuiltinExchangeType.DIRECT);
 
 
-                double cabin = new Random().nextDouble(300, 1013);
-                publish(queueName, CabinSensorData.builder()
-                        .name(queueName)
-                        .pressure(cabin)
-                        .id(UUID.randomUUID().toString())
-                        .timestamp(Instant.now())
-                        .build(), channel);
-                Thread.sleep(500);
+            double direction = new Random().nextDouble(90, 270);
+            publish(queueName, DirectionSensorData.builder()
+                    .name(queueName)
+                    .angle(direction)
+                    .id(UUID.randomUUID().toString())
+                    .timestamp(Instant.now())
+                    .build(), channel);
+            Thread.sleep(500);
 
 
         } catch (IOException e) {
@@ -51,7 +51,7 @@ public class CabinSensor implements Runnable {
         }
     }
 
-    public void publish(String queueName, CabinSensorData data, Channel channel) throws Exception {
+    public void publish(String queueName, DirectionSensorData data, Channel channel) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         channel.basicPublish(queueName, "", null, objectMapper.writeValueAsString(data).getBytes());
         log.info("{} Data {} Sent", getClass().getSimpleName(), data);

@@ -7,11 +7,11 @@ import org.example.common.QueueEnum;
 import org.example.common.SensorConnection;
 import org.example.sensor.AltitudeSensor;
 import org.example.sensor.CabinSensor;
+import org.example.sensor.DirectionSensor;
 
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class Sensor {
@@ -42,9 +42,13 @@ public class Sensor {
                 new AltitudeSensor(QueueEnum.Altitude.getName(),
                         lock, channel), 0, Constants.interval, TimeUnit.MILLISECONDS);
 
-//        ScheduledFuture<?> cabinSensor = scheduledExecutor.scheduleAtFixedRate(
-//                new CabinSensor(QueueEnum.Cabin.getName(),
-//                        lock), 0, Constants.interval, TimeUnit.MILLISECONDS);
+        ScheduledFuture<?> cabinSensor = scheduledExecutor.scheduleAtFixedRate(
+                new CabinSensor(QueueEnum.Cabin.getName(),
+                        lock, channel), 0, Constants.interval, TimeUnit.MILLISECONDS);
+
+        ScheduledFuture<?> directionSensor = scheduledExecutor.scheduleAtFixedRate(
+                new DirectionSensor(QueueEnum.Direction.getName(),
+                        lock, channel), 0, Constants.interval, TimeUnit.MILLISECONDS);
 
         //Wait the countdown to 0
         lock.await();
@@ -54,7 +58,8 @@ public class Sensor {
 
         //abort all sensor as flight simulation done
         altitudeSensor.cancel(true);
-        //cabinSensor.cancel(true);
+        cabinSensor.cancel(true);
+        directionSensor.cancel(true);
 
         //Close channel
         channel.close();

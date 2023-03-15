@@ -8,5 +8,7 @@ public class AirplaneData {
 
     private boolean oxygenMaskOpen;
 
+    private String directionOfTail;
+
     //TODO add more field
 }

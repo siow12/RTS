@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
-public class CabinSensorData extends SensorData {
-    private Double pressure;
+public class DirectionSensorData extends SensorData {
+    private Double angle;
 
 }

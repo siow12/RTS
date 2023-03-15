@@ -6,7 +6,8 @@ import lombok.Getter;
 @Getter
 public enum QueueEnum {
     Altitude("Altitude"),
-    Cabin("Cabin");
+    Cabin("Cabin"),
+    Direction("Direction");
 
 
     private String name;

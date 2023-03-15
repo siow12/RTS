@@ -11,47 +11,48 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.common.*;
 
 import java.nio.charset.StandardCharsets;
-
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 @SuperBuilder
 @Slf4j
-public class OxygenMaskActuator extends AbstractActuator implements Runnable{
-
-
-    @Override
+public class TailActuator extends AbstractActuator implements Runnable{
     public void run() {
         try {
 
             //Setup Connection
             Connection connection = ActuatorConnection.getConnection();
             Channel channel = connection.createChannel();
-            String queueName = channel.queueDeclare(QueueEnum.Cabin.getName(), false, false, false, null).getQueue();
-            channel.queueBind(queueName, QueueEnum.Cabin.getName(), "");
+            String queueName = channel.queueDeclare(QueueEnum.Direction.getName(), false, false, false, null).getQueue();
+            channel.queueBind(queueName, QueueEnum.Direction.getName(), "");
 
             //Read Data from queue
-            channel.basicConsume(QueueEnum.Cabin.getName(), true, (tag, msg) -> {
+            channel.basicConsume(QueueEnum.Direction.getName(), true, (tag, msg) -> {
 
                 //Convert byte to string
                 String m = new String(msg.getBody(), StandardCharsets.UTF_8);
 
                 //Convert string (JSON format) to Object
                 ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-                CabinSensorData data = objectMapper.readValue(m, CabinSensorData.class);
+                DirectionSensorData data = objectMapper.readValue(m, DirectionSensorData.class);
                 log.info("Message Received: {}", data);
                 //Cabin Logic
 
-
-                if (data.getPressure() < Constants.pressureMin) {
+                if (data.getAngle() > 90 && data.getAngle() < 180) {
                     airplaneData.updateAndGet(a -> {
-                        a.setOxygenMaskOpen(true);
+                        a.setDirectionOfTail(Constants.tailDirectionLeft);
                         return a;
                     });
-                    log.info("Airplane cabin pressure lesser than {}, deploying oxygen mask!", data.getPressure());
+                    log.info("Airplane tail turn Left!");
                     log.info("Airplane data = {}", airplaneData.get());
-                }else {
-                    log.info("Airplane cabin pressure {}", data.getPressure());
-                    log.info("Airplane data = {}", airplaneData.get());                }
+                } else if (data.getAngle() >= 180 && data.getAngle() < 270)
+                {
+                    airplaneData.updateAndGet(a -> {
+                        a.setDirectionOfTail(Constants.tailDirectionRight);
+                        return a;
+                    });
+                    log.info("Airplane tail turn Right!");
+                    log.info("Airplane data = {}", airplaneData.get());
+                }
 
             }, consumerTag -> {
             });

@@ -8,6 +8,13 @@ public class Constants {
     public static final double LandingHeight = 1000;
     public static final double pressureMin = 400;
     public static final double pressureMax= 1013;
+    public static final double windDirectionRight=210;
+    public static final double windDirectionLeft=150;
+    public static final double windDirection=180;
+
+    public static final String tailDirectionLeft="Left";
+    public static final String tailDirectionRight="Right";
+
 
     //Simulation Config
     public static final long takeOff = 10;
